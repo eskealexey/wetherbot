@@ -10,7 +10,7 @@ from aiogram import F
 from aiogram.types import Message
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
-from util import check_format, get_adrr, format_msg, get_weaher, wind_direction
+from util import check_format, get_adrr, format_msg, get_weaher, wind_direction, get_coordinates
 
 # Включаем логирование, чтобы не пропустить важные сообщения
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +24,10 @@ dp = Dispatcher()
 class Coordinates(StatesGroup):
     latitude = State()
     longitude = State()
+
+#
+# class City(Coordinates):
+#     name = State()
 
 place_coord = {}
 
@@ -93,7 +97,26 @@ async def cmd_food(message: Message):
     location = ",".join(reversed(get_adrr([lati, longi]).split(",")))
     await message.answer(text=location)
     await message.answer(text=f'Широта:{lati} \nДолгота:{longi}', reply_markup=wether_kb)
-    print(lati, longi)
+
+
+@dp.message(F.text == "Укажите населенный пункт")
+async def place_(message:types.Message):
+    await message.answer(text="Город:")
+
+@dp.message()
+async def get_city_coordinates(message: types.Message):
+    city_name = message.text.strip()
+    coordinates = await get_coordinates(city_name)
+
+    if coordinates:
+        place_coord['latitude'] = coordinates[0]
+        place_coord['longitude'] =coordinates[1]
+        await message.answer(f"Координаты города {city_name}: \nШирота: {place_coord['latitude']}\nДолгота: {place_coord['longitude']}", reply_markup=wether_kb)
+    else:
+        await message.answer("Не удалось найти координаты для данного города. Проверьте, правильно ли вы ввели название.")
+
+
+
 
 # Запуск процесса поллинга новых апдейтов
 
