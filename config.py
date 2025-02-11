@@ -1,5 +1,5 @@
 API_TOKEN = '---'
-OPEN_WEATHER_TOKEH = '59bdb9972b4f4e4972d35cea19ffb337'
+OPEN_WEATHER_TOKEH = '---'
 
 code_to_smail = {
     "Clear": 'Ясно\U00002600',
