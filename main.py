@@ -63,7 +63,7 @@ async def set_latitude(message: Message, state: FSMContext):
         else:
             raise ValueError
     except ValueError as err:
-        await message.reply(text='Ввод некорректный,\nШирота должна быть между -90 и 90!!!')
+        await message.reply(text=f'Ввод некорректный,\nШирота должна быть между -90 и 90!!!')
         await message.answer(text="Введите широту:")
         await state.set_state(Coordinates.latitude)
 
@@ -161,42 +161,41 @@ async def get_weather_now(callback: types.CallbackQuery):
     except Exception as err:
         print(err)
 
+
 @dp.callback_query(F.data == "get_wether_today")
 async def get_weather_today(callback: types.CallbackQuery):
     """Получить погоду на сутки"""
-    text = ''
+    text = '\n'  # Добавляем перенос строки в начале текста
     lati = place_coord['latitude']
     longi = place_coord['longitude']
     data = get_hourly_forecast(lati, longi, OPEN_WEATHER_TOKEH)
-    await callback.message.answer(f'ш: {lati} д: {longi}')
-    if data:
-        for i in range(0,9):
-            # await callback.message.answer(format_date(data[i]['dt_txt']))
-            temper = data[i]['main']['temp']  # - 273.15
-            pressure = data[i]['main']['pressure']
-            humidity = data[i]['main']['humidity']
-            wind_speed = data[i]['wind']['speed']
-            # wind_gust = ['wind']['gust']
-            wind_deg = wind_direction(data[i]['wind']['deg'])
-            weather_main = data[i]['weather'][0]['main']
+    text += f"{data[1]}\n"  # Добавляем информацию о местоположении
+    text += f"ш: {lati} д: {longi}\n"  # Добавляем координаты
+
+    if data[0]:
+        for i in range(0, 9):
+            temper = data[0][i]['main']['temp']  # - 273.15
+            pressure = data[0][i]['main']['pressure']
+            humidity = data[0][i]['main']['humidity']
+            wind_speed = data[0][i]['wind']['speed']
+            wind_deg = wind_direction(data[0][i]['wind']['deg'])
+            weather_main = data[0][i]['weather'][0]['main']
             if weather_main in code_to_smail:
                 code_smail = code_to_smail[weather_main]
             else:
                 code_smail = 'Неопределено'
 
-            text += f" <b><u>{format_date(data[i]['dt_txt'])}</u></b> \n \
-                  {code_smail}\n  \
-                  <em>Темп.: </em><b>{temper:.1f} °C</b>\n  \
-                  <em>Влаж.: </em><b>{humidity}</b> %\n  \
-                  <em>А.д.: </em>{pressure * 0.75} мм.р.ст\n  \
-                  <em>{wind_deg}</em> <b>{wind_speed}</b> м/с \n"
+            text += f" <b><u>{format_date(data[0][i]['dt_txt'])}</u></b> \n" \
+                     f"{code_smail}\n" \
+                     f"<em>Темп.: </em><b>{temper:.1f} °C</b>\n" \
+                     f"<em>Влаж.: </em><b>{humidity}</b> %\n" \
+                     f"<em>А.д.: </em>{pressure * 0.75} мм.р.ст\n" \
+                     f"<em>{wind_deg}</em> <b>{wind_speed}</b> м/с \n\n"
 
         await callback.message.answer(text=text, parse_mode='html')
 
     else:
         await callback.message.answer(f'Ошибка получения данных')
-
-
 
 
 

@@ -22,13 +22,10 @@ wether_kb = InlineKeyboardMarkup(
             InlineKeyboardButton(text='Погода сейчас', callback_data='get_wether_now')
         ],
         [
-            InlineKeyboardButton(text='Погода на сегодня', callback_data='get_wether_today')
+            InlineKeyboardButton(text='Прогноз на сутки', callback_data='get_wether_today')
         ],
-        # [
-        #     InlineKeyboardButton(text='Погода на неделю', callback_data='get_wether_week')
-        # ],
-        # [
-        #     InlineKeyboardButton(text='Погода на месяц', callback_data='get_wether_month')
-        # ]
+        [
+            InlineKeyboardButton(text='Прогноз на неделю', callback_data='get_wether_week')
+        ],
     ]
 )

@@ -17,13 +17,13 @@ def get_weaher(latitude: float, longitude: float, weather_token) -> Any | None:
         print(err)
 
 
-def get_hourly_forecast(lat: float, lon:float, weather_token) -> list | None:
+def get_hourly_forecast(lat: float, lon:float, weather_token) -> tuple | None:
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&units=metric&appid={weather_token}"
     response = requests.get(url)
     data = response.json()
 
     if response.status_code == 200:
-        return data['list']  # Возвращает список прогнозов
+        return data['list'], data['city']['name']  # Возвращает список прогнозов
     else:
         print(f"Ошибка: {data['message']}")
         return None
