@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from aiohttp import ClientSession
@@ -7,6 +8,7 @@ import requests
 
 
 def get_weaher(latitude: float, longitude: float, weather_token) -> Any | None:
+    """Функция для получения текущенго прогноза погоды"""
     try:
         r = requests.get(f'http://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&lat={latitude}&lon={longitude}&appid={weather_token}')
         data = r.json()
@@ -15,7 +17,20 @@ def get_weaher(latitude: float, longitude: float, weather_token) -> Any | None:
         print(err)
 
 
+def get_hourly_forecast(lat: float, lon:float, weather_token) -> list | None:
+    url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&units=metric&appid={weather_token}"
+    response = requests.get(url)
+    data = response.json()
+
+    if response.status_code == 200:
+        return data['list']  # Возвращает список прогнозов
+    else:
+        print(f"Ошибка: {data['message']}")
+        return None
+
+
 def get_adrr(location: list) -> str:
+    """Возвращает адрес места"""
     try:
         geo_loc = Nominatim(user_agent="GetLoc")
         loc_name = geo_loc.reverse(location)
@@ -26,6 +41,9 @@ def get_adrr(location: list) -> str:
 
 
 def format_msg(coord: str) -> str | None:
+    """
+    Форматирует координаты
+    """
     try:
         str_ = coord.replace(',', '.')
         return str_
@@ -34,6 +52,9 @@ def format_msg(coord: str) -> str | None:
 
 
 def check_format(str_: str) -> bool | None:
+    """
+    Проверяет формат координат
+    """
     pattern = r'^-?\d{0,3}\.\d{1,8}$'
     prog = re.compile(pattern)
     try:
@@ -47,6 +68,9 @@ def check_format(str_: str) -> bool | None:
 
 
 def wind_direction(grad: float) -> str:
+    """
+    Возвращает направление ветра
+    """
     direction = ''
     if (0 < grad < 22.5) or (337.5 < grad < 360.0):
         direction = 'Северный'
@@ -67,7 +91,6 @@ def wind_direction(grad: float) -> str:
     return direction
 
 
-
 # Функция для получения координат города
 async def get_coordinates(city_name: str):
     url = f'https://nominatim.openstreetmap.org/search?q={city_name}&format=json&addressdetails=1'
@@ -81,6 +104,11 @@ async def get_coordinates(city_name: str):
             else:
                 return None
 
+
+def format_date(date_str: str) -> str:
+    date_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+    new_date_str = date_obj.strftime("%d %b %Y %H:%M")
+    return new_date_str
 
 
 

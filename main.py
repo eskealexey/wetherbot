@@ -1,16 +1,19 @@
 import asyncio
 import logging
-from aiogram.methods import DeleteWebhook
+
 from aiogram import Bot, Dispatcher, types, html
-from aiogram.filters import Command, StateFilter
+from aiogram import F
+from aiogram.enums import ParseMode
+from aiogram.filters import Command
 from aiogram.filters.state import StatesGroup, State
+from aiogram.fsm.context import FSMContext
+from aiogram.methods import DeleteWebhook
+from aiogram.types import Message
+
 from config import API_TOKEN, OPEN_WEATHER_TOKEH, code_to_smail
 from keyboards import start_kb, wether_kb
-from aiogram import F
-from aiogram.types import Message
-from aiogram.enums import ParseMode
-from aiogram.fsm.context import FSMContext
-from util import check_format, get_adrr, format_msg, get_weaher, wind_direction, get_coordinates
+from util import check_format, get_adrr, format_msg, get_weaher, wind_direction, get_coordinates, get_hourly_forecast, \
+    format_date
 
 # Включаем логирование, чтобы не пропустить важные сообщения
 logging.basicConfig(level=logging.INFO)
@@ -25,15 +28,14 @@ class Coordinates(StatesGroup):
     latitude = State()
     longitude = State()
 
-#
-# class City(Coordinates):
-#     name = State()
-
 place_coord = {}
 
 
 @dp.message(Command("start"))
 async def start(message):
+    """
+    Приветствие пользователя
+    """
     await message.answer(f"Привет, {html.bold(html.quote(message.from_user.first_name))}",
                          parse_mode=ParseMode.HTML, reply_markup=start_kb)
 
@@ -41,12 +43,16 @@ async def start(message):
 # Машина состояний - ввод координат с клавиатуры - НАЧАЛО
 @dp.message(F.text == "Введите координаты")
 async def cmd_food(message: Message, state: FSMContext):
+    """
+    Ввод координат с клавиатуры
+    """
     await message.answer(text="Введите широту:")
     await state.set_state(Coordinates.latitude)
 
 
 @dp.message(Coordinates.latitude)
 async def set_latitude(message: Message, state: FSMContext):
+    """Ввод широты с клавиатуры"""
     try:
         msg = format_msg(message.text)
         check = check_format(msg)
@@ -64,6 +70,7 @@ async def set_latitude(message: Message, state: FSMContext):
 
 @dp.message(Coordinates.longitude)
 async def set_longitude(message: Message, state: FSMContext):
+    """Ввод долготы с клавиатуры"""
     try:
         msg = format_msg(message.text)
         check = check_format(msg)
@@ -90,6 +97,7 @@ async def set_longitude(message: Message, state: FSMContext):
 
 @dp.message(F.location)
 async def cmd_food(message: Message):
+    """Определение широты и долготы города с GPS"""
     lati = message.location.latitude
     longi = message.location.longitude
     place_coord['latitude'] = lati
@@ -101,10 +109,14 @@ async def cmd_food(message: Message):
 
 @dp.message(F.text == "Укажите населенный пункт")
 async def place_(message:types.Message):
+    """
+    Ввод населенного пункта с клавиатуры
+    """
     await message.answer(text="Город:")
 
 @dp.message()
 async def get_city_coordinates(message: types.Message):
+    """ Получить координаты города"""
     city_name = message.text.strip()
     coordinates = await get_coordinates(city_name)
 
@@ -116,13 +128,9 @@ async def get_city_coordinates(message: types.Message):
         await message.answer("Не удалось найти координаты для данного города. Проверьте, правильно ли вы ввели название.")
 
 
-
-
-# Запуск процесса поллинга новых апдейтов
-
-
 @dp.callback_query(F.data == "get_wether_now")
 async def get_weather_now(callback: types.CallbackQuery):
+    """Получить погоду в данный момент"""
     lati = place_coord['latitude']
     longi = place_coord['longitude']
     await callback.answer(f'ш: {lati} д: {longi}')
@@ -153,8 +161,48 @@ async def get_weather_now(callback: types.CallbackQuery):
     except Exception as err:
         print(err)
 
+@dp.callback_query(F.data == "get_wether_today")
+async def get_weather_today(callback: types.CallbackQuery):
+    """Получить погоду на сутки"""
+    text = ''
+    lati = place_coord['latitude']
+    longi = place_coord['longitude']
+    data = get_hourly_forecast(lati, longi, OPEN_WEATHER_TOKEH)
+    await callback.message.answer(f'ш: {lati} д: {longi}')
+    if data:
+        for i in range(0,9):
+            # await callback.message.answer(format_date(data[i]['dt_txt']))
+            temper = data[i]['main']['temp']  # - 273.15
+            pressure = data[i]['main']['pressure']
+            humidity = data[i]['main']['humidity']
+            wind_speed = data[i]['wind']['speed']
+            # wind_gust = ['wind']['gust']
+            wind_deg = wind_direction(data[i]['wind']['deg'])
+            weather_main = data[i]['weather'][0]['main']
+            if weather_main in code_to_smail:
+                code_smail = code_to_smail[weather_main]
+            else:
+                code_smail = 'Неопределено'
+
+            text += f" <b><u>{format_date(data[i]['dt_txt'])}</u></b> \n \
+                  {code_smail}\n  \
+                  <em>Темп.: </em><b>{temper:.1f} °C</b>\n  \
+                  <em>Влаж.: </em><b>{humidity}</b> %\n  \
+                  <em>А.д.: </em>{pressure * 0.75} мм.р.ст\n  \
+                  <em>{wind_deg}</em> <b>{wind_speed}</b> м/с \n"
+
+        await callback.message.answer(text=text, parse_mode='html')
+
+    else:
+        await callback.message.answer(f'Ошибка получения данных')
+
+
+
+
+
 
 async def main():
+    """Запуск бота"""
     await bot(DeleteWebhook(drop_pending_updates=True))
     await dp.start_polling(bot)
 
