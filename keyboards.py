@@ -24,8 +24,8 @@ wether_kb = InlineKeyboardMarkup(
         [
             InlineKeyboardButton(text='Прогноз на сутки', callback_data='get_wether_today')
         ],
-        [
-            InlineKeyboardButton(text='Прогноз на неделю', callback_data='get_wether_week')
-        ],
+        # [
+        #     InlineKeyboardButton(text='Прогноз на неделю', callback_data='get_wether_week')
+        # ],
     ]
 )

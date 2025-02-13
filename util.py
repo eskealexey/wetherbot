@@ -113,3 +113,4 @@ def format_date(date_str: str) -> str:
 
 
 # get_weather(48.744919, 44.525669, '59bdb9972b4f4e4972d35cea19ffb337')
+# https://api.openweathermap.org/data/2.5/forecast?lat=48.744919&lon=44.525669&units=metric&appid=59bdb9972b4f4e4972d35cea19ffb337
